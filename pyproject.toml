@@ -20,4 +20,6 @@ build-backend = "hatchling.build"
 extend-select = ["I"]
 
 [tool.uv]
-dev-dependencies = []
+dev-dependencies = [
+    "bump2version>=1.0.1",
+]
