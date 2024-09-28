@@ -1,4 +1,5 @@
 import datetime
+import os
 
 import jinja2
 
@@ -13,11 +14,9 @@ def process_dynamodb_costs(result, start_date, end_date, tables):
     daily_data = []
 
     def find_table_name(usage_type, region):
-        # Check if the usage type contains a table name
         for table in tables.get(region, []):
             if table.lower() in usage_type.lower():
                 return table
-        # If no match, return None instead of "Unallocated"
         return None
 
     for period in result["ResultsByTime"]:
@@ -100,40 +99,7 @@ def process_dynamodb_costs(result, start_date, end_date, tables):
 
 
 def render_report(data):
-    template = jinja2.Template("""
-DynamoDB Costs and Usage:
-Period: {{ data.start_date }} to {{ data.end_date }}
-
-Detailed Results:
-{% for day in data.daily_data %}
-Date: {{ day.date }} ({{ day.days_ago }} days ago)
-{% for ut in day.usage_types %}
-  Usage Type: {{ ut.usage_type }}
-    Region: {{ ut.region }}
-    {% if ut.table_name %}Table: {{ ut.table_name }}{% else %}Table: Not specified{% endif %}
-    Cost: ${{ "%.2f"|format(ut.cost) }}
-    Usage Quantity: {{ "%.2f"|format(ut.usage) }}
-{% endfor %}
-Total Daily Cost: ${{ "%.2f"|format(day.cost) }}
-Estimated: {{ "Yes" if day.estimated else "No" }}
-{% endfor %}
-
-Total Cost Breakdown by Usage Type:
-{% for ut in data.usage_type_summary %}
-{{ "%-40s"|format(ut.usage_type) }}: ${{ "%8.2f"|format(ut.cost) -}}
-{% endfor %}
-
-Total Cost Breakdown by Region:
-{% for region in data.region_cost_summary %}
-{{ "%-40s"|format(region.region) }}: ${{ "%8.2f"|format(region.cost) -}}
-{% endfor %}
-
-Total Cost Breakdown by Table:
-{% for table in data.table_cost_summary %}
-{{ "%-40s"|format(table.table_name) }}: ${{ "%8.2f"|format(table.cost) -}}
-{% endfor %}
-
-Total Cost for the period: ${{ "%.2f"|format(data.total_cost) }}
-  """)
-
+    template_dir = os.path.join(os.path.dirname(__file__), "templates")
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
+    template = env.get_template("dynamodb_report.jinja2")
     return template.render(data=data)
