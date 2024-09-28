@@ -13,3 +13,6 @@ costs:
 
 costs-custom:
     python -m limetrend dynamodb --days 60
+
+clean:
+    rm -rf dist/
